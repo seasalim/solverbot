@@ -1,4 +1,5 @@
 import openai
+from openai import OpenAI
 import json
 import requests
 import os
@@ -50,12 +51,12 @@ def run_conversation(autorun):
     #
     # CONFIGURATION
     #
-    gpt_model = "gpt-3.5-turbo-0613"
+    gpt_model = "gpt-3.5-turbo-0125"
     maze_size = 7  # Starting size of maze
     wait_time = 2  # Adjust the wait time between requests
     logging.basicConfig(level=logging.ERROR)  # Set the log level
 
-    openai.api_key = os.getenv("OPENAI_API_KEY")
+    client = OpenAI()
 
     messages = [{"role": "user", "content": f"Your task is to find your way out of a maze. You can only move in directions where there is a passageway. You can only use the available functions to interact with the user. First, generate a size {maze_size} maze, then move until you find the exit. Move with purpose, don't wander aimlessly. Give some interesting, amusing or funny commentary as you explore. Stop when you locate an exit."}]
 
@@ -101,20 +102,25 @@ def run_conversation(autorun):
         logging.debug(f"Sending message: {messages}")
 
         # Send message to GPT
-        response = openai.ChatCompletion.create(
-            model=gpt_model, messages=messages, functions=functions, function_call="auto")
+        response = client.chat.completions.create(
+            messages=messages,
+            functions=functions,
+            function_call="auto",
+            model=gpt_model,
+        )
 
-        response_message = response["choices"][0]["message"]
+        response_message = response.choices[0].message
 
         logging.debug(f"Received response: {response_message}")
+        # print(response.model_dump_json(indent=2))
 
         # Check if GPT wanted to call a function
-        if response_message.get("function_call"):
-            function_name = response_message["function_call"]["name"]
+        if dict(response_message).get("function_call"):
+            function_name = dict(response_message).get("function_call").name
             function_to_call = available_functions[function_name]
             function_args = json.loads(
-                response_message["function_call"]["arguments"])
-
+                dict(response_message).get("function_call").arguments
+            )
             print(f"[cyan]AGENT:[/cyan] {function_name} {function_args}")
 
             if autorun:
