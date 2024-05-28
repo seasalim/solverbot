@@ -2,53 +2,45 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const app = express();
 const port = 3000;
-
-// Middleware to parse JSON bodies
-app.use(bodyParser.json());
-
-// Maze class import
 const Maze = require('./maze');
 
+app.use(bodyParser.json());
+
 // Internal state
-const maze = new Maze();
+let maze = new Maze();
 
 // BOT command endpoint
 app.post('/command', (req, res) => {
-    const command = req.body.command;
-    const parameter = req.body.parameter;
-    const commentary = req.body.commentary;
+    const { command, parameter, commentary } = req.body;
 
     switch (command) {
         case 'look':
-            console.log("Looking");
-            var msg = maze.look();
-            res.json({ message: msg });
+            console.log('Looking');
+            res.json({ message: maze.look() });
             break;
         case 'generate':
-            console.log('Generating maze', parameter);
-            if (parameter != undefined && parameter != null) {
-                var msg = maze.generate(parseInt(parameter));
-                res.json({ message: msg });
-            } else {
+            if (!parameter || typeof parseInt(parameter) !== 'number') {
                 res.status(400).json({ error: 'Invalid parameter for generate command' });
+                return;
             }
+            console.log(`Generating maze with ${parameter} cells`);
+            res.json({ message: maze.generate(Number(parameter)) });
             break;
         case 'move':
-            console.log('Moving', parameter);
-            if (parameter != undefined && parameter != null) {
-                var msg = maze.move(parameter.toString());
-                res.json({ message: msg });
-            } else {
+            if (!parameter || typeof parameter !== 'string') {
                 res.status(400).json({ error: 'Invalid parameter for move command' });
+                return;
             }
+            console.log(`Moving to ${parameter}`);
+            res.json({ message: maze.move(parameter) });
             break;
         default:
             res.status(400).json({ error: 'Invalid command' });
-            break;
     }
 
-    if (commentary != undefined && commentary != null)
+    if (commentary) {
         maze.set_commentary(commentary);
+    }
 });
 
 // UI endpoint
