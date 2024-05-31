@@ -34,6 +34,10 @@ app.post('/command', (req, res) => {
             console.log(`Moving to ${parameter}`);
             res.json({ message: maze.move(parameter) });
             break;
+        case 'commentary':
+            console.log(`Setting commentary`);
+            res.json({ message: 'Done!' });
+            break;
         default:
             res.status(400).json({ error: 'Invalid command' });
     }

@@ -42,6 +42,11 @@ class Command:
         commentary = args.get("commentary")
         return Command.request('move', direction, commentary)
 
+    @staticmethod
+    def victory(args: str):
+        commentary = args.get("commentary")
+        return Command.request('commentary', 'None', commentary)
+
 #
 # Conversation execution
 #
@@ -51,7 +56,7 @@ def run_conversation(autorun):
     #
     # CONFIGURATION
     #
-    gpt_model = "gpt-3.5-turbo-0125"
+    gpt_model = "gpt-4o"
     maze_size = 7  # Starting size of maze
     wait_time = 2  # Adjust the wait time between requests
     logging.basicConfig(level=logging.ERROR)  # Set the log level
@@ -93,10 +98,24 @@ def run_conversation(autorun):
                 "required": ["direction"],
             },
         },
+        {
+            "name": "maze_end",
+            "description": "Victory! Found the end of the maze, let's stop now.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "commentary": {
+                        "type": "string",
+                        "description": "Some interesting, witty, or funny commentary, take a victory lap!"
+                    }
+                },
+                "required": ["commentary"],
+            },
+        }
     ]
 
     available_functions = {
-        "maze_generate": Command.generate, "maze_move": Command.move}
+        "maze_generate": Command.generate, "maze_move": Command.move, "maze_end": Command.victory}
 
     while True:
         logging.debug(f"Sending message: {messages}")
@@ -131,6 +150,10 @@ def run_conversation(autorun):
             function_response = function_to_call(function_args)
             print(f"[red]RESPONSE:[/red] {function_response}\n")
 
+            # Exit if at maze end
+            if (function_name == "maze_end"):
+                break
+
             # Extend the conversation with GPT reply
             messages.append(response_message)
 
@@ -138,7 +161,7 @@ def run_conversation(autorun):
             messages.append(
                 {"role": "function", "name": function_name, "content": function_response})
         else:
-            print(f"[cyan]ASSISTANT:[/cyan]: {response_message}")
+            print(f"[cyan]AGENT:[/cyan]: {response_message}")
             break
 
 
